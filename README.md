@@ -4,6 +4,12 @@
 
 ---
 
+## Live Demo
+https://your-project.vercel.app
+
+## GitHub Repository
+https://github.com/KARANDZ/BookStack-Silapathar
+
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
@@ -304,7 +310,3 @@ graph TD;
 ## 📄 License & Credits
 
 Designed & Developed for **LocalBookHub Silapathar**. Built with Next.js, Tailwind CSS, and Supabase.
-
-## Live Demo
-
-https://your-project.vercel.app
