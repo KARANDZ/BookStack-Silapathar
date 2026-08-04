@@ -304,3 +304,7 @@ graph TD;
 ## 📄 License & Credits
 
 Designed & Developed for **LocalBookHub Silapathar**. Built with Next.js, Tailwind CSS, and Supabase.
+
+## Live Demo
+
+https://your-project.vercel.app
