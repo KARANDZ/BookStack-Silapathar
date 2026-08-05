@@ -1,4 +1,4 @@
-# 📚 LocalBookHub - Town Bookstall Marketplace & Reservation Platform
+# 📚 BookStack Silapathar - Town Bookstall Marketplace & Reservation Platform
 
 > A modern, full-stack web application connecting readers with local bookstalls in **Silapathar**. Browse inventory across local stores, search books in real-time, reserve copies for offline pickup, and manage sales via an integrated administrative dashboard.
 
@@ -18,6 +18,7 @@ https://github.com/KARANDZ/BookStack-Silapathar
   - [Admin Panel](#admin-panel)
 - [Tech Stack](#-tech-stack)
 - [Database Schema & Architecture](#-database-schema--architecture)
+- [Recent Updates & Architecture Refactoring](#-recent-updates--architecture-refactoring)
 - [Project Directory Structure](#-project-directory-structure)
 - [API Reference](#-api-reference)
 - [Getting Started](#-getting-started)
@@ -34,7 +35,7 @@ https://github.com/KARANDZ/BookStack-Silapathar
 
 **LocalBookHub** solves a common local commerce problem: book lovers often don't know which local bookstore has a specific book in stock, leading to wasted store visits or turning to giant online e-commerce platforms. 
 
-LocalBookHub bridges this gap by aggregating local bookstall inventories into a central, searchable marketplace. Customers can instantly search for titles or authors across all registered stalls in **Silapathar**, check live stock levels, and reserve books for store pickup. Local bookstall owners gain access to an intuitive admin dashboard to track revenue, fulfill reservations, and manage inventory.
+LocalBookHub bridges this gap by aggregating local bookstall inventories into a central, searchable marketplace. Customers can instantly search for titles, authors, categories, or specific bookstores in **Silapathar**, check live stock levels, and reserve books for store pickup. Local bookstall owners gain access to an intuitive admin dashboard to track revenue, fulfill reservations, and manage inventory.
 
 ---
 
@@ -42,16 +43,16 @@ LocalBookHub bridges this gap by aggregating local bookstall inventories into a 
 
 ### Customer Portal
 - 🏪 **Bookstall Directory**: Browse local bookstalls in Silapathar with store logos, addresses, and contact info.
-- 🔍 **Real-Time Book Search**: Instant keyword search for book titles and authors across all participating bookstalls.
+- 🔍 **Multi-Field Real-Time Search**: Search by title, author, category, or bookstore name across all participating bookstalls.
 - 📖 **Detailed Inventory Views**: Inspect store-specific book availability, pricing, descriptions, cover images, and stock status.
 - 🛍️ **Instant Book Reservation**: Reserve books online for physical store pickup without upfront payment ("Pay at Store / Offline").
-- 📜 **Booking Tracking ("My Bookings")**: Track reservation history and live status (*Reserved*, *Completed*, or *Cancelled*).
+- 📜 **Booking Tracking & Customer Cancellation**: Track reservation history, view pickup details, and cancel reservations with automatic stock restoration back to store inventory.
 
 ### Admin Panel
-- 📊 **Analytics Dashboard**: Real-time business metrics including Total Orders, Reserved Count, Completed Count, Cancelled Count, and Total Revenue (₹).
-- 📦 **Order Fulfillment**: Review incoming book pickup reservations with customer itemized order breakdowns.
+- 📊 **Analytics Dashboard**: Real-time business metrics including Total Orders, Pending Pickups, Completed Count, Cancelled Count, and Total Revenue (₹).
+- 📦 **Order Fulfillment**: Review incoming book pickup reservations with itemized customer order breakdowns.
 - ✅ **Pick-up Completion**: Mark orders as "Picked Up" once customers collect their reserved books.
-- ❌ **Order Cancellation & Stock Restoration**: Cancel orders with automatic, real-time inventory restoration back to the database.
+- ❌ **Order Cancellation & Stock Restoration**: Cancel orders with automatic, real-time stock restoration back to `book_inventory`.
 
 ---
 
@@ -61,19 +62,23 @@ LocalBookHub bridges this gap by aggregating local bookstall inventories into a 
 - **Framework**: [Next.js 14](https://nextjs.org/) (Pages Router)
 - **UI Library**: [React 18](https://react.dev/)
 - **Styling**: [Tailwind CSS v3](https://tailwindcss.com/) with PostCSS & Autoprefixer
-- **Data Fetching**: [SWR](https://swr.vercel.app/) & Supabase JS SDK
+- **Data Fetching**: Supabase JS SDK (`@supabase/supabase-js`)
 
 ### Backend & Database
 - **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL)
 - **API Engine**: Next.js Serverless API Routes (`/pages/api/*`)
 - **Database Extension**: PostgreSQL `pgcrypto` for UUID generation
-- **Search Engine**: PostgreSQL Full-Text Search GIN indexing (`to_tsvector`)
 
 ---
 
 ## 🗄️ Database Schema & Architecture
 
-The database is built on PostgreSQL hosted on Supabase. Below is the relational structure defined in [`prisma/schema.sql`](file:///c:/Users/das65/OneDrive/Desktop/localbookhub_full/prisma/schema.sql):
+The database follows a **normalized relational architecture** on PostgreSQL hosted on Supabase:
+
+### 1. Master Catalog vs. Store Inventory
+
+- **`books` (Master Catalog)**: Contains master information about books (`id`, `title`, `author`, `isbn`, `category`, `description`, `image_url`). It represents *what books exist in the system*, independent of store stock.
+- **`book_inventory` (Store Inventory Source of Truth)**: Maps `(book_id + bookstall_id)` with store-specific `stock` and `price`. This table is the **single source of truth** for availability.
 
 ### Data Models
 
@@ -98,22 +103,29 @@ create table bookstalls (
   created_at timestamptz default now()
 );
 
--- 3. Books & Inventory Table
+-- 3. Books Table (Master Catalog)
 create table books (
   id uuid primary key default gen_random_uuid(),
-  bookstall_id uuid references bookstalls(id) on delete cascade,
   title text not null,
   author text,
   isbn text,
-  price numeric(10,2) not null,
-  stock integer default 0,
   image_url text,
   category text,
   description text,
   created_at timestamptz default now()
 );
 
--- 4. Order Status Enum & Orders Table
+-- 4. Book Inventory Table (Single Source of Truth for Stock & Price)
+create table book_inventory (
+  id uuid primary key default gen_random_uuid(),
+  book_id uuid references books(id) on delete cascade,
+  bookstall_id uuid references bookstalls(id) on delete cascade,
+  stock integer not null default 0,
+  price numeric(10,2) not null,
+  created_at timestamptz default now()
+);
+
+-- 5. Orders Table
 create type order_status as enum ('pending', 'reserved', 'completed', 'cancelled');
 
 create table orders (
@@ -122,11 +134,11 @@ create table orders (
   bookstall_id uuid references bookstalls(id),
   total_amount numeric(10,2) default 0,
   status order_status default 'pending',
-  payment_method text,
+  payment_method text default 'offline',
   created_at timestamptz default now()
 );
 
--- 5. Order Items Table
+-- 6. Order Items Table
 create table order_items (
   id uuid primary key default gen_random_uuid(),
   order_id uuid references orders(id) on delete cascade,
@@ -134,11 +146,47 @@ create table order_items (
   quantity integer not null default 1,
   price_at_purchase numeric(10,2) not null
 );
-
--- Full-Text Search Index
-create index idx_books_title on books using gin (to_tsvector('english', coalesce(title,'') || ' ' || coalesce(author,'')));
 ```
 
+---
+
+## ⚡ Recent Updates & Architecture Refactoring
+
+### 1. `book_inventory` Single Source of Truth Restoration
+- Updated all frontend pages (`/search`, `/stall/[id]`, `/book/[id]`) and backend API routes (`/api/orders`, `/api/books/search`) to query `book_inventory` joined with `books` and `bookstalls`.
+- Fixed book availability logic so stock and price read directly from `book_inventory.stock` and `book_inventory.price`.
+- Restored store page metrics so "Titles Available" is calculated from active store inventory records.
+
+### 2. Multi-Field Search & Live Filters
+- Expanded `/search` and `/api/books/search` to search across book title, author, category, and bookstore name.
+- Added live clear button, loading skeletons, and interactive search feedback.
+
+### 3. Order Management & Automated Stock Restoration
+- Updated reservation placement (`/api/orders`) to validate stock against `book_inventory.stock` and decrement `book_inventory.stock`.
+- Added customer-side cancellation on `/bookings` with stock restoration back to `book_inventory`.
+- Updated admin order cancellation (`/admin/orders`) to safely loop through order items and restore stock to `book_inventory`.
+- Corrected status badge color coding (`reserved` = Amber, `completed` = Emerald, `cancelled` = Rose).
+
+### 4. UI & Aesthetic Overhaul
+- Redesigned header with glassmorphism backdrop, brand logo badge, and active link highlights.
+- Added image error fallback handlers for books and store logos.
+- Updated store directory, book detail view, and admin metrics cards with clean modern styling.
+### 4. Modern UI / UX Redesign
+
+The user interface was completely modernized to provide a cleaner and more intuitive experience while preserving the original functionality.
+
+#### Improvements
+
+- Redesigned responsive homepage with improved visual hierarchy.
+- Modernized search interface with loading states and interactive feedback.
+- Redesigned Book Cards with inventory badges, pricing emphasis, and better spacing.
+- Improved bookstore directory layout and navigation.
+- Enhanced Book Detail pages with cleaner information hierarchy.
+- Refined Admin Dashboard using modern analytics cards and improved action buttons.
+- Added consistent color palette, rounded components, improved shadows, and hover animations.
+- Improved responsive behavior for desktop, tablet, and mobile devices.
+- Added image fallback handling for books and bookstore logos.
+- Improved typography and spacing across the application.
 ---
 
 ## 📁 Project Directory Structure
@@ -146,33 +194,33 @@ create index idx_books_title on books using gin (to_tsvector('english', coalesce
 ```text
 localbookhub_full/
 ├── components/            # Reusable UI Components
-│   ├── BookCard.js        # Individual book display card with reservation action
+│   ├── BookCard.js        # Card component receiving `inventory` (stock, price, books, bookstalls)
 │   ├── Header.js          # Main navigation bar (Home, Search, My Bookings, Admin)
-│   ├── Layout.js          # Global page layout container wrapper
+│   ├── Layout.js          # Global page layout container wrapper with footer
 │   └── StallCard.js       # Bookstall card component for directory listing
 ├── lib/
 │   └── supabaseClient.js  # Supabase client instantiation (@supabase/supabase-js)
 ├── pages/                 # Next.js Pages & Routing
 │   ├── _app.js            # Custom App component & global CSS imports
 │   ├── index.js           # Homepage (Bookstall Directory for Silapathar)
-│   ├── search.js          # Search page for books by title or author
-│   ├── bookings.js        # Customer reservation history & status tracking
+│   ├── search.js          # Search page querying book_inventory
+│   ├── bookings.js        # Customer reservation history & cancellation
 │   ├── admin/             # Administrative Management Module
 │   │   ├── index.js       # Admin panel navigation hub
 │   │   ├── dashboard.js   # Real-time revenue & order statistics
 │   │   └── orders.js      # Order fulfillment (Mark Completed / Cancel Order)
 │   ├── api/               # Serverless REST API Handlers
 │   │   ├── bookstalls.js  # GET: Fetch all registered bookstalls
-│   │   ├── orders.js      # POST: Create order reservation & update stock
+│   │   ├── orders.js      # POST: Reserve book & decrement book_inventory stock
 │   │   ├── books/
-│   │   │   └── search.js  # GET: Search books endpoint
+│   │   │   └── search.js  # GET: Search book_inventory endpoint
 │   │   └── stalls/
 │   │       └── [id]/
 │   │           └── books.js # GET: Fetch inventory for specific stall
 │   ├── book/
-│   │   └── [id].js        # Detailed book view and booking page
+│   │   └── [id].js        # Detailed book & store inventory reservation page
 │   └── stall/
-│       └── [id].js        # Individual bookstall showcase page
+│       └── [id].js        # Individual bookstall showcase & store inventory page
 ├── prisma/
 │   └── schema.sql         # PostgreSQL schema definition & initial setup script
 ├── public/                # Static assets (images, logos, placeholders)
@@ -190,33 +238,33 @@ localbookhub_full/
 ## 🔌 API Reference
 
 ### 1. `GET /api/bookstalls`
-- **Description**: Returns all registered bookstalls ordered by creation date.
+- **Description**: Returns all registered bookstalls ordered by name.
 - **Response**: Array of bookstall objects (`id`, `name`, `address`, `city`, `phone`, `logo_url`).
 
 ### 2. `GET /api/books/search?q={query}`
-- **Description**: Performs a case-insensitive search (`ilike`) on book titles and authors.
+- **Description**: Searches `book_inventory` joined with `books` and `bookstalls` by title, author, category, or store name.
 - **Parameters**: `q` (Search string).
-- **Response**: Array of matching book objects joined with store details (`bookstalls`).
+- **Response**: Array of `book_inventory` objects with joined `books` and `bookstalls`.
 
 ### 3. `GET /api/stalls/[id]/books`
-- **Description**: Retrieves all books available at a specific bookstall.
-- **Response**: Array of book inventory objects belonging to the store.
+- **Description**: Retrieves all inventory items available at a specific bookstall.
+- **Response**: Array of `book_inventory` objects belonging to the store.
 
 ### 4. `POST /api/orders`
 - **Description**: Core transaction handler to place a book reservation.
 - **Request Body**:
   ```json
   {
-    "bookstall_book_id": "UUID",
+    "inventory_id": "UUID",
     "quantity": 1
   }
   ```
 - **Execution Flow**:
-  1. Validates stock availability.
+  1. Validates stock availability against `book_inventory`.
   2. Inserts order record into `orders` with status `'reserved'`.
   3. Inserts order item line in `order_items`.
-  4. Atomically decrements `stock` count in the `books` table.
-- **Response**: `{ "message": "Book reserved successfully", "order_id": "UUID" }`
+  4. Atomically decrements `stock` count in the `book_inventory` table.
+- **Response**: `{ "success": true, "message": "Book reserved successfully", "order_id": "UUID" }`
 
 ---
 
@@ -253,8 +301,8 @@ localbookhub_full/
 1. Log into your **Supabase Dashboard** and create a new PostgreSQL project.
 2. Open the **SQL Editor** tab in your Supabase dashboard.
 3. Open [`prisma/schema.sql`](file:///c:/Users/das65/OneDrive/Desktop/localbookhub_full/prisma/schema.sql) from this repository.
-4. Copy and paste the entire script into the Supabase SQL Editor and click **Run**.
-5. Ensure tables (`users`, `bookstalls`, `books`, `orders`, `order_items`) and enum types are created successfully.
+4. Copy and paste the script into the Supabase SQL Editor and click **Run**.
+5. Ensure tables (`users`, `bookstalls`, `books`, `book_inventory`, `orders`, `order_items`) are created successfully.
 
 ---
 
@@ -285,15 +333,15 @@ localbookhub_full/
 
 ```mermaid
 graph TD;
-    A[Customer browses or searches book] --> B[View Book Details & Stock];
+    A[Customer browses or searches book inventory] --> B[View Book Details & Store Stock from book_inventory];
     B --> C[Click 'Book Now' / Reserve];
     C --> D[System creates Order with status 'reserved'];
-    D --> E[System automatically decrements stock count];
+    D --> E[System automatically decrements stock in book_inventory];
     E --> F[Customer visits Bookstall in Silapathar];
     F --> G{Store fulfillment action};
     G -->|Customer picks up book| H[Admin marks 'Picked Up' -> Status: 'completed'];
-    G -->|Reservation cancelled| I[Admin marks 'Cancel' -> Status: 'cancelled'];
-    I --> J[System automatically restores book stock];
+    G -->|Reservation cancelled| I[Customer or Admin cancels -> Status: 'cancelled'];
+    I --> J[System automatically restores stock back to book_inventory];
 ```
 
 ---
@@ -309,4 +357,4 @@ graph TD;
 
 ## 📄 License & Credits
 
-Designed & Developed for **LocalBookHub Silapathar**. Built with Next.js, Tailwind CSS, and Supabase.
+Designed & Developed for **BookStack Silapathar**. Built with Next.js, Tailwind CSS, and Supabase.

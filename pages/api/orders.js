@@ -6,42 +6,76 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { bookstall_book_id, quantity = 1 } = req.body;
+    const { inventory_id, book_id, quantity = 1 } = req.body;
+    const targetInventoryId = inventory_id;
 
-    if (!bookstall_book_id) {
-      return res.status(400).json({ error: 'Inventory ID is required' });
-    }
+    let inventory = null;
 
-    // 1️⃣ Get inventory + book details
-    const { data: inventory, error: inventoryError } = await supabase
-      .from('bookstall_books')
-      .select(`
-        id,
-        stock,
-        bookstall_id,
-        books (
+    if (targetInventoryId) {
+      const { data, error } = await supabase
+        .from('book_inventory')
+        .select(`
           id,
-          price
-        )
-      `)
-      .eq('id', bookstall_book_id)
-      .single();
+          stock,
+          price,
+          book_id,
+          bookstall_id,
+          books (
+            id,
+            title
+          )
+        `)
+        .eq('id', targetInventoryId)
+        .single();
 
-    if (inventoryError || !inventory) {
-      return res.status(404).json({ error: 'Inventory item not found' });
+      if (!error && data) {
+        inventory = data;
+      }
     }
 
-    // 2️⃣ Check stock
+    // Fallback lookup by book_id if inventory_id was not provided directly
+    if (!inventory && book_id) {
+      const { data, error } = await supabase
+        .from('book_inventory')
+        .select(`
+          id,
+          stock,
+          price,
+          book_id,
+          bookstall_id,
+          books (
+            id,
+            title
+          )
+        `)
+        .eq('book_id', book_id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        inventory = data;
+      }
+    }
+
+    if (!inventory) {
+      return res.status(404).json({ error: 'Book inventory item not found' });
+    }
+
+    // Check stock in book_inventory table
     if (inventory.stock < quantity) {
-      return res.status(400).json({ error: 'Not enough stock available' });
+      return res.status(400).json({ error: 'Not enough stock available at this bookstore' });
     }
 
-    // 3️⃣ Create order
+    const itemPrice = Number(inventory.price) || 0;
+    const totalAmount = itemPrice * quantity;
+
+    // 1️⃣ Create reservation order
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert([
         {
           bookstall_id: inventory.bookstall_id,
+          total_amount: totalAmount,
           status: 'reserved',
           payment_method: 'offline',
         },
@@ -49,43 +83,47 @@ export default async function handler(req, res) {
       .select()
       .single();
 
-    if (orderError) {
-      return res.status(500).json({ error: 'Failed to create order' });
+    if (orderError || !order) {
+      console.error('Order creation error:', orderError);
+      return res.status(500).json({ error: 'Failed to create order reservation' });
     }
 
-    // 4️⃣ Create order item (IMPORTANT FIX)
+    // 2️⃣ Insert reservation item into order_items
     const { error: itemError } = await supabase
       .from('order_items')
       .insert([
         {
           order_id: order.id,
-          bookstall_book_id: inventory.id,
+          book_id: inventory.book_id,
           quantity,
-          price_at_purchase: inventory.books.price,
+          price_at_purchase: itemPrice,
         },
       ]);
 
     if (itemError) {
-      return res.status(500).json({ error: 'Failed to create order item' });
+      console.error('Order item insertion error:', itemError);
+      return res.status(500).json({ error: 'Failed to record reservation items' });
     }
 
-    // 5️⃣ Reduce stock in inventory
+    // 3️⃣ Decrement stock in book_inventory table (the single source of truth for stock)
+    const newStock = Math.max(0, inventory.stock - quantity);
     const { error: stockError } = await supabase
-      .from('bookstall_books')
-      .update({ stock: inventory.stock - quantity })
+      .from('book_inventory')
+      .update({ stock: newStock })
       .eq('id', inventory.id);
 
     if (stockError) {
-      return res.status(500).json({ error: 'Failed to update stock' });
+      console.error('Book inventory stock update error:', stockError);
+      return res.status(500).json({ error: 'Failed to update store inventory stock' });
     }
 
     return res.status(200).json({
-      message: 'Book reserved successfully',
+      success: true,
+      message: 'Book reserved successfully for store pickup!',
       order_id: order.id,
     });
-
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Something went wrong' });
+    console.error('API Error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
