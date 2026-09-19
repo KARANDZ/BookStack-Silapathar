@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '../context/AuthContext';
+import { useRouter } from 'next/router';
+import { supabase } from '../lib/supabaseClient';
 
 export default function BookCard({ inventory }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const { user } = useAuth();
+  const router = useRouter();
 
   if (!inventory) return null;
 
@@ -23,15 +29,24 @@ export default function BookCard({ inventory }) {
   const stallId = stall.id || inventory.bookstall_id;
 
   async function handleBookNow() {
+    if (!user) {
+      router.push(`/login?returnUrl=/book/${inventoryId}`);
+      return;
+    }
+
     setLoading(true);
     setMessage('');
     setErrorMsg('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           inventory_id: inventoryId,
@@ -125,7 +140,7 @@ export default function BookCard({ inventory }) {
                 : 'bg-indigo-600 hover:bg-indigo-700 active:scale-95'
             }`}
           >
-            {loading ? 'Reserving...' : 'Book Now'}
+            {loading ? 'Reserving...' : user ? 'Book Now' : 'Sign in to Reserve'}
           </button>
         </div>
 

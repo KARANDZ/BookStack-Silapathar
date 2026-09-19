@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
+  const { user, role, loading: authLoading } = useAuth();
+  const router = useRouter();
+
   const [stats, setStats] = useState({
     total: 0,
     reserved: 0,
@@ -15,6 +20,12 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user || role !== 'ADMIN') {
+      router.push('/login?returnUrl=/admin/dashboard');
+      return;
+    }
+
     async function loadStats() {
       setLoading(true);
 
@@ -69,7 +80,22 @@ export default function AdminDashboard() {
     }
 
     loadStats();
-  }, []);
+  }, [user, role, authLoading, router]);
+
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="py-12 text-center text-slate-500">
+          <div className="text-3xl mb-2 animate-bounce">🔐</div>
+          <p>Verifying admin privileges...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user || role !== 'ADMIN') {
+    return null;
+  }
 
   return (
     <Layout>
@@ -78,24 +104,32 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
-              <span>Admin Management</span>
+              <span>Platform Admin</span>
               <span>•</span>
               <Link href="/admin/orders" className="hover:underline">Manage Orders</Link>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              Business Analytics & Metrics
+              Business Analytics & Platform Metrics
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">
               Real-time platform statistics, reservation breakdown, and overall store revenue.
             </p>
           </div>
 
-          <Link
-            href="/admin/orders"
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
-          >
-            📋 Manage Orders
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/users"
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors"
+            >
+              👥 Manage Users
+            </Link>
+            <Link
+              href="/admin/orders"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
+            >
+              📋 All Orders
+            </Link>
+          </div>
         </div>
 
         {loading && (
@@ -142,24 +176,24 @@ export default function AdminDashboard() {
         )}
 
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-base font-bold text-slate-900 mb-2">Quick Admin Navigation</h3>
+          <h3 className="text-base font-bold text-slate-900 mb-2">Quick Platform Controls</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link
               href="/admin/orders"
               className="p-4 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors block"
             >
-              <div className="font-bold text-slate-900 text-sm">📋 Fulfill & Manage Orders</div>
+              <div className="font-bold text-slate-900 text-sm">📋 Fulfill & Manage All Orders</div>
               <p className="text-xs text-slate-500 mt-1">
-                View live customer pickup reservations, complete store pickups, or cancel orders.
+                View platform-wide customer pickup reservations, complete store pickups, or cancel orders.
               </p>
             </Link>
             <Link
-              href="/search"
+              href="/admin/users"
               className="p-4 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors block"
             >
-              <div className="font-bold text-slate-900 text-sm">🔍 Inspect Books & Inventory</div>
+              <div className="font-bold text-slate-900 text-sm">👥 User Roles & Store Owners</div>
               <p className="text-xs text-slate-500 mt-1">
-                Search and check current stock levels for all titles listed across Silapathar stalls.
+                View registered users, assign STORE_OWNER or ADMIN roles, and assign store ownership.
               </p>
             </Link>
           </div>

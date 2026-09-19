@@ -15,7 +15,9 @@ https://github.com/KARANDZ/BookStack-Silapathar
 - [Overview](#-overview)
 - [Key Features](#-key-features)
   - [Customer Portal](#customer-portal)
-  - [Admin Panel](#admin-panel)
+  - [Store Admin Portal](#store-admin-portal-store_owner--admin)
+  - [Admin Panel](#admin-panel-admin-only)
+  - [Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
 - [Tech Stack](#-tech-stack)
 - [Database Schema & Architecture](#-database-schema--architecture)
 - [Recent Updates & Architecture Refactoring](#-recent-updates--architecture-refactoring)
@@ -48,11 +50,22 @@ LocalBookHub bridges this gap by aggregating local bookstall inventories into a 
 - 🛍️ **Instant Book Reservation**: Reserve books online for physical store pickup without upfront payment ("Pay at Store / Offline").
 - 📜 **Booking Tracking & Customer Cancellation**: Track reservation history, view pickup details, and cancel reservations with automatic stock restoration back to store inventory.
 
-### Admin Panel
+### Store Admin Portal (STORE_OWNER & ADMIN)
+- 🏪 **Store-Scoped Order Management**: View and fulfill customer pick-up reservations placed specifically at owned bookstores.
+- 🏷️ **Inventory & Price Management**: Adjust live stock levels and store prices in real-time per bookstore.
+- 📚 **Catalog & Inventory Addition**: Add existing catalog titles or list new books safely via atomic stored functions (`add_new_catalog_book_and_inventory`).
+- ❌ **Order Fulfillment & Cancellation**: Mark store pick-ups completed or process order cancellations with automatic stock restoration.
+
+### Admin Panel (ADMIN Only)
 - 📊 **Analytics Dashboard**: Real-time business metrics including Total Orders, Pending Pickups, Completed Count, Cancelled Count, and Total Revenue (₹).
-- 📦 **Order Fulfillment**: Review incoming book pickup reservations with itemized customer order breakdowns.
-- ✅ **Pick-up Completion**: Mark orders as "Picked Up" once customers collect their reserved books.
-- ❌ **Order Cancellation & Stock Restoration**: Cancel orders with automatic, real-time stock restoration back to `book_inventory`.
+- 👥 **User & Role Management**: Inspect registered platform users and elevate roles (`USER`, `STORE_OWNER`, `ADMIN`) securely via `admin_change_user_role`.
+- 📦 **Global Order Fulfillment**: Review and fulfill incoming book pickup reservations across all bookstores platform-wide.
+- ✅ **Pick-up Completion & Cancellation**: Fulfill orders or process cancellations with automatic stock restoration back to `book_inventory`.
+
+### Role-Based Access Control (RBAC)
+- 👤 **USER**: Customer role assigned automatically upon registration. Can browse stores, search books, reserve copies, and cancel their own bookings from any store.
+- 🏪 **STORE_OWNER**: Assigned by Admin. Manages store inventory and customer reservations for owned bookstores while retaining full customer functionality under My Bookings.
+- ⚙️ **ADMIN**: Full platform access. Manages global catalog, all store orders, system metrics, and user roles.
 
 ---
 
@@ -62,10 +75,12 @@ LocalBookHub bridges this gap by aggregating local bookstall inventories into a 
 - **Framework**: [Next.js 14](https://nextjs.org/) (Pages Router)
 - **UI Library**: [React 18](https://react.dev/)
 - **Styling**: [Tailwind CSS v3](https://tailwindcss.com/) with PostCSS & Autoprefixer
+- **State & Auth Context**: React Context API (`AuthContext`) managing Supabase Auth sessions & roles
 - **Data Fetching**: Supabase JS SDK (`@supabase/supabase-js`)
 
 ### Backend & Database
-- **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL)
+- **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL) with Supabase Auth
+- **Authorization & Security**: PostgreSQL Row-Level Security (RLS) policies, PL/pgSQL `SECURITY DEFINER` RPC functions with atomic row locking (`FOR UPDATE`), and role security triggers
 - **API Engine**: Next.js Serverless API Routes (`/pages/api/*`)
 - **Database Extension**: PostgreSQL `pgcrypto` for UUID generation
 
@@ -83,28 +98,32 @@ The database follows a **normalized relational architecture** on PostgreSQL host
 ### Data Models
 
 ```sql
--- 1. Users Table
-create table users (
-  id uuid primary key default gen_random_uuid(),
+-- Enum for User Roles
+create type public.user_role as enum ('USER', 'STORE_OWNER', 'ADMIN');
+
+-- 1. Users Table (Linked to auth.users)
+create table public.users (
+  id uuid primary key references auth.users(id) on delete cascade,
   name text,
   email text unique,
+  role public.user_role not null default 'USER'::public.user_role,
   created_at timestamptz default now()
 );
 
 -- 2. Bookstalls Table
-create table bookstalls (
+create table public.bookstalls (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   address text,
   city text not null default 'Silapathar',
   phone text,
   logo_url text,
-  owner_id uuid references users(id),
+  owner_id uuid references public.users(id),
   created_at timestamptz default now()
 );
 
 -- 3. Books Table (Master Catalog)
-create table books (
+create table public.books (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   author text,
@@ -112,14 +131,16 @@ create table books (
   image_url text,
   category text,
   description text,
+  price numeric(10,2),
+  bookstall_id uuid references public.bookstalls(id),
   created_at timestamptz default now()
 );
 
 -- 4. Book Inventory Table (Single Source of Truth for Stock & Price)
-create table book_inventory (
+create table public.book_inventory (
   id uuid primary key default gen_random_uuid(),
-  book_id uuid references books(id) on delete cascade,
-  bookstall_id uuid references bookstalls(id) on delete cascade,
+  book_id uuid references public.books(id) on delete cascade,
+  bookstall_id uuid references public.bookstalls(id) on delete cascade,
   stock integer not null default 0,
   price numeric(10,2) not null,
   created_at timestamptz default now()
@@ -128,10 +149,10 @@ create table book_inventory (
 -- 5. Orders Table
 create type order_status as enum ('pending', 'reserved', 'completed', 'cancelled');
 
-create table orders (
+create table public.orders (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references users(id),
-  bookstall_id uuid references bookstalls(id),
+  user_id uuid references public.users(id),
+  bookstall_id uuid references public.bookstalls(id),
   total_amount numeric(10,2) default 0,
   status order_status default 'pending',
   payment_method text default 'offline',
@@ -139,14 +160,22 @@ create table orders (
 );
 
 -- 6. Order Items Table
-create table order_items (
+create table public.order_items (
   id uuid primary key default gen_random_uuid(),
-  order_id uuid references orders(id) on delete cascade,
-  book_id uuid references books(id),
+  order_id uuid references public.orders(id) on delete cascade,
+  book_id uuid references public.books(id),
   quantity integer not null default 1,
   price_at_purchase numeric(10,2) not null
 );
 ```
+
+### Security & Database Stored Functions (RPCs)
+- **`create_reservation_tx(p_inventory_id, p_quantity)`**: Performs atomic row locking (`FOR UPDATE`) on `book_inventory`, decrements stock, creates order and order item records.
+- **`cancel_reservation_tx(p_order_id)`**: Cancels reservation with atomic stock restoration. Authorizes user (own booking from any store), store owner (own store reservations), or admin.
+- **`complete_reservation_tx(p_order_id)`**: Marks reservation completed. Authorizes store owner (own store) or admin.
+- **`add_new_catalog_book_and_inventory(...)`**: Safely adds master book catalog entry and store inventory entry.
+- **`admin_change_user_role(p_target_user_id, p_new_role)`**: Admin-only RPC to elevate user roles.
+- **`enforce_user_role_security()`**: Database trigger preventing non-admin users from altering their role column.
 
 ---
 
@@ -187,6 +216,13 @@ The user interface was completely modernized to provide a cleaner and more intui
 - Improved responsive behavior for desktop, tablet, and mobile devices.
 - Added image fallback handling for books and bookstore logos.
 - Improved typography and spacing across the application.
+### 5. Full Role-Based Access Control (RBAC), Supabase Auth & Secure RPC Transactions
+- Integrated Supabase Auth with React `AuthContext` for login, signup, and session management across the application.
+- Implemented 3 strict roles (`USER`, `STORE_OWNER`, `ADMIN`) with `public.users.role` as single source of truth.
+- Created `prisma/rbac_setup.sql` containing enum `user_role`, foreign key linking `public.users.id` to `auth.users(id)`, RLS policies across all 6 tables, and role security trigger `enforce_user_role_security`.
+- Hardened database operations with atomic `SECURITY DEFINER` RPC functions (`create_reservation_tx`, `cancel_reservation_tx`, `complete_reservation_tx`, `add_new_catalog_book_and_inventory`, `admin_change_user_role`).
+- Protected `/admin/*` routes strictly for `ADMIN` and `/store-admin/*` routes for `STORE_OWNER` & `ADMIN`.
+
 ---
 
 ## 📁 Project Directory Structure
@@ -194,24 +230,32 @@ The user interface was completely modernized to provide a cleaner and more intui
 ```text
 localbookhub_full/
 ├── components/            # Reusable UI Components
-│   ├── BookCard.js        # Card component receiving `inventory` (stock, price, books, bookstalls)
-│   ├── Header.js          # Main navigation bar (Home, Search, My Bookings, Admin)
+│   ├── BookCard.js        # Card component receiving inventory (stock, price, books, bookstalls)
+│   ├── Header.js          # Main navigation bar (Home, Search, My Bookings, Store Admin, Admin Panel)
 │   ├── Layout.js          # Global page layout container wrapper with footer
 │   └── StallCard.js       # Bookstall card component for directory listing
+├── context/               # React Context
+│   └── AuthContext.js     # Supabase Auth session, role tracking, signIn, signUp & signOut
 ├── lib/
 │   └── supabaseClient.js  # Supabase client instantiation (@supabase/supabase-js)
 ├── pages/                 # Next.js Pages & Routing
-│   ├── _app.js            # Custom App component & global CSS imports
+│   ├── _app.js            # Custom App component wrapping AuthProvider & global CSS
 │   ├── index.js           # Homepage (Bookstall Directory for Silapathar)
 │   ├── search.js          # Search page querying book_inventory
-│   ├── bookings.js        # Customer reservation history & cancellation
-│   ├── admin/             # Administrative Management Module
+│   ├── bookings.js        # Customer reservation history & self-cancellation
+│   ├── login.js           # User sign-in page
+│   ├── signup.js          # User registration page (defaults to USER role)
+│   ├── store-admin/       # Store Owner Portal (STORE_OWNER / ADMIN)
+│   │   ├── inventory.js   # Store stock, pricing, and catalog addition RPC
+│   │   └── orders.js      # Store pickup reservations & fulfillment
+│   ├── admin/             # Administrative Management Module (ADMIN only)
 │   │   ├── index.js       # Admin panel navigation hub
 │   │   ├── dashboard.js   # Real-time revenue & order statistics
-│   │   └── orders.js      # Order fulfillment (Mark Completed / Cancel Order)
+│   │   ├── orders.js      # Global platform order fulfillment
+│   │   └── users.js       # Admin user listing & role elevation management
 │   ├── api/               # Serverless REST API Handlers
 │   │   ├── bookstalls.js  # GET: Fetch all registered bookstalls
-│   │   ├── orders.js      # POST: Reserve book & decrement book_inventory stock
+│   │   ├── orders.js      # POST: Authenticated reservation placement via create_reservation_tx
 │   │   ├── books/
 │   │   │   └── search.js  # GET: Search book_inventory endpoint
 │   │   └── stalls/
@@ -222,7 +266,8 @@ localbookhub_full/
 │   └── stall/
 │       └── [id].js        # Individual bookstall showcase & store inventory page
 ├── prisma/
-│   └── schema.sql         # PostgreSQL schema definition & initial setup script
+│   ├── schema.sql         # Base PostgreSQL schema definition
+│   └── rbac_setup.sql     # Complete Supabase RBAC migration script (Enum, Triggers, RPCs, RLS Policies)
 ├── public/                # Static assets (images, logos, placeholders)
 ├── styles/
 │   └── globals.css        # Tailwind CSS directives & global styling rules
@@ -300,9 +345,9 @@ localbookhub_full/
 
 1. Log into your **Supabase Dashboard** and create a new PostgreSQL project.
 2. Open the **SQL Editor** tab in your Supabase dashboard.
-3. Open [`prisma/schema.sql`](file:///c:/Users/das65/OneDrive/Desktop/localbookhub_full/prisma/schema.sql) from this repository.
+3. Open [`prisma/rbac_setup.sql`](file:///c:/Users/das65/OneDrive/Desktop/localbookhub_full/prisma/rbac_setup.sql) from this repository.
 4. Copy and paste the script into the Supabase SQL Editor and click **Run**.
-5. Ensure tables (`users`, `bookstalls`, `books`, `book_inventory`, `orders`, `order_items`) are created successfully.
+5. Ensure tables (`users`, `bookstalls`, `books`, `book_inventory`, `orders`, `order_items`), enum `user_role`, security triggers, RLS policies, and RPC stored functions are created successfully.
 
 ---
 
@@ -348,7 +393,7 @@ graph TD;
 
 ## 💡 Future Enhancements
 
-- 🔐 **User Authentication**: Complete integration with Supabase Auth for customer logins & store owner role-based access control.
+- [x] 🔐 **User Authentication & RBAC**: Complete integration with Supabase Auth for customer logins & role-based access control (`USER`, `STORE_OWNER`, `ADMIN`).
 - 💳 **Online Payment Gateway**: Integration with Razorpay / UPI for optional advance payment.
 - 📍 **Geolocation & Map View**: Interactive map showing bookstall locations in Silapathar.
 - 🔔 **SMS / WhatsApp Notifications**: Instant notification alerts to bookstall owners when new reservations are placed.

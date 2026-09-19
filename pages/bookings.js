@@ -1,16 +1,129 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 
 export default function Bookings() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
 
-  async function loadBookings() {
-    setLoading(true);
-    const { data, error } = await supabase
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push('/login?returnUrl=/bookings');
+      return;
+    }
+
+    async function loadBookings() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          status,
+          total_amount,
+          bookstall_id,
+          created_at,
+          bookstalls (
+            id,
+            name,
+            address,
+            phone
+          ),
+          order_items (
+            id,
+            quantity,
+            price_at_purchase,
+            books (
+              id,
+              title,
+              author
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error) {
+        setBookings(data || []);
+      } else {
+        console.error('Bookings load error:', error);
+      }
+
+      setLoading(false);
+    }
+
+    loadBookings();
+  }, [user, authLoading, router]);
+
+  async function handleCancelReservation(order) {
+    if (!confirm('Are you sure you want to cancel this book reservation?')) return;
+    setCancellingId(order.id);
+
+    try {
+      // 1. Try atomic cancellation RPC first
+      const { data: rpcOk, error: rpcErr } = await supabase.rpc('cancel_reservation_tx', {
+        p_order_id: order.id,
+      });
+
+      if (!rpcErr && rpcOk) {
+        await reloadBookings();
+        setCancellingId(null);
+        return;
+      }
+
+      // 2. Fallback client cancellation logic if RPC pending
+      const { error: orderErr } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', order.id);
+
+      if (orderErr) {
+        alert('Failed to cancel order: ' + orderErr.message);
+        setCancellingId(null);
+        return;
+      }
+
+      const stallId = order.bookstall_id || order.bookstalls?.id;
+      if (order.order_items && order.order_items.length > 0 && stallId) {
+        for (const item of order.order_items) {
+          const bookId = item?.books?.id;
+          if (bookId) {
+            const { data: inv } = await supabase
+              .from('book_inventory')
+              .select('id, stock')
+              .eq('book_id', bookId)
+              .eq('bookstall_id', stallId)
+              .maybeSingle();
+
+            if (inv) {
+              await supabase
+                .from('book_inventory')
+                .update({ stock: inv.stock + (item.quantity || 1) })
+                .eq('id', inv.id);
+            }
+          }
+        }
+      }
+
+      await reloadBookings();
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while cancelling reservation.');
+    }
+
+    setCancellingId(null);
+  }
+
+  async function reloadBookings() {
+    if (!user) return;
+    const { data } = await supabase
       .from('orders')
       .select(`
         id,
@@ -35,70 +148,10 @@ export default function Bookings() {
           )
         )
       `)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (!error) {
-      setBookings(data || []);
-    } else {
-      console.error('Bookings load error:', error);
-    }
-
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    loadBookings();
-  }, []);
-
-  async function handleCancelReservation(order) {
-    if (!confirm('Are you sure you want to cancel this book reservation?')) return;
-    setCancellingId(order.id);
-
-    try {
-      // 1️⃣ Update order status to 'cancelled'
-      const { error: orderErr } = await supabase
-        .from('orders')
-        .update({ status: 'cancelled' })
-        .eq('id', order.id);
-
-      if (orderErr) {
-        alert('Failed to cancel order: ' + orderErr.message);
-        setCancellingId(null);
-        return;
-      }
-
-      // 2️⃣ Restore stock in book_inventory for each item in the order
-      const stallId = order.bookstall_id || order.bookstalls?.id;
-
-      if (order.order_items && order.order_items.length > 0 && stallId) {
-        for (const item of order.order_items) {
-          const bookId = item?.books?.id;
-          if (bookId) {
-            // Find inventory entry matching this book and stall
-            const { data: inv } = await supabase
-              .from('book_inventory')
-              .select('id, stock')
-              .eq('book_id', bookId)
-              .eq('bookstall_id', stallId)
-              .maybeSingle();
-
-            if (inv) {
-              await supabase
-                .from('book_inventory')
-                .update({ stock: inv.stock + (item.quantity || 1) })
-                .eq('id', inv.id);
-            }
-          }
-        }
-      }
-
-      await loadBookings();
-    } catch (err) {
-      console.error(err);
-      alert('An error occurred while cancelling reservation.');
-    }
-
-    setCancellingId(null);
+    setBookings(data || []);
   }
 
   const getStatusBadge = (status) => {
@@ -113,6 +166,17 @@ export default function Bookings() {
         return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
+
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="py-12 text-center text-slate-500">
+          <div className="text-3xl mb-2 animate-bounce">🔐</div>
+          <p>Verifying authentication state...</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

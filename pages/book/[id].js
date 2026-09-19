@@ -3,10 +3,12 @@ import { supabase } from '../../lib/supabaseClient';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '../../context/AuthContext';
 
 export default function BookPage() {
   const router = useRouter();
   const { id } = router.query;
+  const { user } = useAuth();
 
   const [inventory, setInventory] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,14 +66,24 @@ export default function BookPage() {
 
   async function handleReservation() {
     if (!inventory) return;
+
+    if (!user) {
+      router.push(`/login?returnUrl=/book/${inventory.id || id}`);
+      return;
+    }
+
     setSubmitting(true);
     setFeedback({ type: '', text: '' });
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           inventory_id: inventory.id,
@@ -278,6 +290,8 @@ export default function BookPage() {
                 >
                   {submitting
                     ? 'Reserving Copy...'
+                    : !user
+                    ? 'Sign In to Reserve Copy'
                     : isAvailable
                     ? 'Reserve for Store Pickup (Pay at Store)'
                     : 'Currently Out of Stock at Store'}
