@@ -70,20 +70,20 @@ export default function BookCard({ inventory }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex flex-col justify-between group h-full">
       <div>
         {/* IMAGE CONTAINER */}
-        <div className="relative w-full h-48 bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center p-2 mb-3 border border-slate-100">
+        <div className="relative w-full h-44 sm:h-48 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-3 mb-3 border border-slate-100 group-hover:bg-indigo-50/30 transition-colors">
           <img
             src={imageUrl}
             alt={title}
-            className="h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            className="h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               e.target.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80';
             }}
           />
           <span
-            className={`absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+            className={`absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider ${
               stock > 0
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                 : 'bg-rose-100 text-rose-800 border border-rose-200'
@@ -95,44 +95,44 @@ export default function BookCard({ inventory }) {
 
         {/* BOOK DETAILS */}
         <Link href={`/book/${inventoryId}`}>
-          <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
+          <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1 text-base">
             {title}
           </h4>
         </Link>
-        <p className="text-xs text-slate-500 mt-0.5">{author}</p>
+        <p className="text-xs text-slate-500 mt-0.5 font-medium truncate">{author}</p>
 
         {stallName && (
-          <div className="mt-2 text-xs text-slate-600 flex items-center gap-1">
+          <div className="mt-2 text-xs text-slate-600 flex items-center gap-1.5 truncate">
             <span>🏪</span>
             {stallId ? (
-              <Link href={`/stall/${stallId}`} className="hover:underline font-medium text-indigo-600">
+              <Link href={`/stall/${stallId}`} className="hover:underline font-medium text-indigo-600 truncate">
                 {stallName}
               </Link>
             ) : (
-              <span className="font-medium text-slate-700">{stallName}</span>
+              <span className="font-medium text-slate-700 truncate">{stallName}</span>
             )}
           </div>
         )}
       </div>
 
-      {/* FOOTER & BUTTON */}
+      {/* FOOTER & BUTTONS */}
       <div className="mt-4 pt-3 border-t border-slate-100">
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs text-slate-400 font-medium">Store Price</div>
           <div className="text-lg font-extrabold text-slate-900">₹{price}</div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Link
             href={`/book/${inventoryId}`}
-            className="flex-1 py-2 px-3 text-center border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-lg transition-colors"
+            className="flex-1 py-2 px-3 text-center border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl transition-colors"
           >
             Details
           </Link>
           <button
             onClick={handleBookNow}
             disabled={loading || stock <= 0}
-            className={`flex-1 py-2 px-3 text-center text-xs font-semibold rounded-lg text-white transition-all shadow-sm ${
+            className={`flex-1 py-2 px-2.5 text-center text-xs font-semibold rounded-xl text-white transition-all shadow-sm ${
               stock <= 0
                 ? 'bg-slate-300 cursor-not-allowed'
                 : loading
@@ -145,12 +145,12 @@ export default function BookCard({ inventory }) {
         </div>
 
         {message && (
-          <p className="mt-2 text-xs font-medium text-center text-emerald-700 bg-emerald-50 py-1.5 px-2 rounded border border-emerald-200">
+          <p className="mt-2 text-xs font-medium text-center text-emerald-700 bg-emerald-50 py-1.5 px-2 rounded-lg border border-emerald-200">
             {message}
           </p>
         )}
         {errorMsg && (
-          <p className="mt-2 text-xs font-medium text-center text-rose-700 bg-rose-50 py-1.5 px-2 rounded border border-rose-200">
+          <p className="mt-2 text-xs font-medium text-center text-rose-700 bg-rose-50 py-1.5 px-2 rounded-lg border border-rose-200">
             {errorMsg}
           </p>
         )}
@@ -158,3 +158,4 @@ export default function BookCard({ inventory }) {
     </div>
   );
 }
+

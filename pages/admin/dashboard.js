@@ -101,31 +101,31 @@ export default function AdminDashboard() {
     <Layout>
       <div className="space-y-6">
         {/* HEADER */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
               <span>Platform Admin</span>
               <span>•</span>
               <Link href="/admin/orders" className="hover:underline">Manage Orders</Link>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900">
               Business Analytics & Platform Metrics
             </h1>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
               Real-time platform statistics, reservation breakdown, and overall store revenue.
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Link
               href="/admin/users"
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors"
+              className="flex-1 sm:flex-initial text-center px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors"
             >
               👥 Manage Users
             </Link>
             <Link
               href="/admin/orders"
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
+              className="flex-1 sm:flex-initial text-center px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
             >
               📋 All Orders
             </Link>
@@ -133,66 +133,66 @@ export default function AdminDashboard() {
         </div>
 
         {loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-32 bg-slate-200 rounded-xl animate-pulse"></div>
+              <div key={i} className="h-28 sm:h-32 bg-slate-200 rounded-2xl animate-pulse"></div>
             ))}
           </div>
         )}
 
         {!loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <StatCard
               icon="📊"
               label="Total Orders"
               value={stats.total}
-              color="bg-indigo-50 text-indigo-600 border-indigo-100"
+              color="bg-indigo-50/50 text-indigo-600 border-indigo-100"
             />
             <StatCard
               icon="⏳"
               label="Pending Pickup"
               value={stats.reserved}
-              color="bg-amber-50 text-amber-600 border-amber-100"
+              color="bg-amber-50/50 text-amber-600 border-amber-100"
             />
             <StatCard
               icon="✅"
               label="Completed"
               value={stats.completed}
-              color="bg-emerald-50 text-emerald-600 border-emerald-100"
+              color="bg-emerald-50/50 text-emerald-600 border-emerald-100"
             />
             <StatCard
               icon="❌"
               label="Cancelled"
               value={stats.cancelled}
-              color="bg-rose-50 text-rose-600 border-rose-100"
+              color="bg-rose-50/50 text-rose-600 border-rose-100"
             />
             <StatCard
               icon="💰"
               label="Completed Revenue"
               value={`₹${stats.revenue}`}
-              color="bg-blue-50 text-blue-700 border-blue-100"
+              color="bg-blue-50/50 text-blue-700 border-blue-100"
             />
           </div>
         )}
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-base font-bold text-slate-900 mb-2">Quick Platform Controls</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+          <h3 className="text-base font-bold text-slate-900 mb-3">Quick Platform Controls</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Link
               href="/admin/orders"
-              className="p-4 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors block"
+              className="p-4 bg-slate-50 hover:bg-indigo-50/50 rounded-xl border border-slate-200 hover:border-indigo-200 transition-all block group"
             >
-              <div className="font-bold text-slate-900 text-sm">📋 Fulfill & Manage All Orders</div>
-              <p className="text-xs text-slate-500 mt-1">
+              <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm">📋 Fulfill & Manage All Orders</div>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 View platform-wide customer pickup reservations, complete store pickups, or cancel orders.
               </p>
             </Link>
             <Link
               href="/admin/users"
-              className="p-4 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors block"
+              className="p-4 bg-slate-50 hover:bg-indigo-50/50 rounded-xl border border-slate-200 hover:border-indigo-200 transition-all block group"
             >
-              <div className="font-bold text-slate-900 text-sm">👥 User Roles & Store Owners</div>
-              <p className="text-xs text-slate-500 mt-1">
+              <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors text-sm">👥 User Roles & Store Owners</div>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 View registered users, assign STORE_OWNER or ADMIN roles, and assign store ownership.
               </p>
             </Link>
@@ -205,12 +205,13 @@ export default function AdminDashboard() {
 
 function StatCard({ icon, label, value, color }) {
   return (
-    <div className={`p-5 rounded-2xl border ${color} bg-white shadow-sm flex flex-col justify-between`}>
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
-        <span className="text-xl">{icon}</span>
+    <div className={`p-4 sm:p-5 rounded-2xl border ${color} bg-white shadow-sm flex flex-col justify-between`}>
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 truncate">{label}</span>
+        <span className="text-lg sm:text-xl flex-shrink-0">{icon}</span>
       </div>
-      <div className="text-2xl font-black text-slate-900 mt-3">{value}</div>
+      <div className="text-xl sm:text-2xl font-black text-slate-900 mt-2 truncate">{value}</div>
     </div>
   );
 }
+

@@ -152,33 +152,33 @@ export default function BookPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* BREADCRUMB */}
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-          <Link href="/" className="hover:text-indigo-600">Home</Link>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-slate-500">
+          <Link href="/" className="hover:text-indigo-600 transition-colors">Home</Link>
           <span>/</span>
           {stall.id ? (
-            <Link href={`/stall/${stall.id}`} className="hover:text-indigo-600">
+            <Link href={`/stall/${stall.id}`} className="hover:text-indigo-600 transition-colors">
               {stall.name}
             </Link>
           ) : (
             <span>Store</span>
           )}
           <span>/</span>
-          <span className="text-slate-900 font-semibold truncate max-w-xs">{book.title}</span>
+          <span className="text-slate-900 font-semibold truncate max-w-[180px] sm:max-w-xs">{book.title}</span>
         </div>
 
         {/* MAIN CONTENT CARD */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
             
             {/* COVER IMAGE */}
-            <div className="md:col-span-5 flex flex-col items-center">
-              <div className="w-full h-80 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center p-4">
+            <div className="lg:col-span-5 flex flex-col items-center">
+              <div className="w-full h-64 sm:h-80 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center p-4 shadow-inner">
                 <img
                   src={book.image_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80'}
                   alt={book.title}
-                  className="max-h-full object-contain drop-shadow"
+                  className="max-h-full max-w-full object-contain drop-shadow-md"
                   onError={(e) => {
                     e.target.src = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80';
                   }}
@@ -186,19 +186,19 @@ export default function BookPage() {
               </div>
 
               {book.category && (
-                <span className="mt-4 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold uppercase tracking-wider">
+                <span className="mt-3.5 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[11px] font-bold uppercase tracking-wider border border-slate-200">
                   Category: {book.category}
                 </span>
               )}
             </div>
 
             {/* BOOK METADATA & RESERVATION */}
-            <div className="md:col-span-7 flex flex-col justify-between">
+            <div className="lg:col-span-7 flex flex-col justify-between">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight">
                   {book.title}
                 </h1>
-                <p className="text-base font-medium text-slate-600 mt-1">
+                <p className="text-sm sm:text-base font-medium text-slate-600 mt-1">
                   By <span className="text-indigo-600 font-semibold">{book.author || 'Unknown Author'}</span>
                 </p>
 
@@ -212,7 +212,7 @@ export default function BookPage() {
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                     Description
                   </h3>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                  <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
                     {book.description || 'No description available for this title.'}
                   </p>
                 </div>
@@ -220,14 +220,14 @@ export default function BookPage() {
                 {/* STORE LOCATION INFO */}
                 {stall.name && (
                   <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-100 flex items-start gap-3">
-                    <div className="text-2xl">🏪</div>
-                    <div className="flex-1">
-                      <div className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                    <div className="text-2xl flex-shrink-0">🏪</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] sm:text-xs font-bold text-indigo-900 uppercase tracking-wider">
                         Store Inventory Location
                       </div>
                       <Link
                         href={`/stall/${stall.id}`}
-                        className="text-base font-bold text-indigo-900 hover:underline"
+                        className="text-sm sm:text-base font-bold text-indigo-900 hover:underline block truncate"
                       >
                         {stall.name}
                       </Link>
@@ -249,12 +249,12 @@ export default function BookPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <span className="text-xs text-slate-400 font-medium block">Store Inventory Price</span>
-                    <span className="text-3xl font-black text-slate-900">₹{price}</span>
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900">₹{price}</span>
                   </div>
 
                   <div className="text-right">
                     <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                      className={`inline-block px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider ${
                         isAvailable
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                           : 'bg-rose-100 text-rose-800 border border-rose-200'
@@ -280,7 +280,7 @@ export default function BookPage() {
                 <button
                   disabled={!isAvailable || submitting}
                   onClick={handleReservation}
-                  className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white shadow-md transition-all ${
+                  className={`w-full py-3.5 px-4 sm:px-6 rounded-xl font-bold text-xs sm:text-sm text-white shadow-md transition-all ${
                     !isAvailable
                       ? 'bg-slate-300 cursor-not-allowed shadow-none'
                       : submitting
@@ -296,7 +296,7 @@ export default function BookPage() {
                     ? 'Reserve for Store Pickup (Pay at Store)'
                     : 'Currently Out of Stock at Store'}
                 </button>
-                <p className="text-[11px] text-slate-400 text-center mt-2">
+                <p className="text-[10px] sm:text-[11px] text-slate-400 text-center mt-2">
                   🔒 Hold copy at bookstore. Pay cash or UPI upon physical store pickup.
                 </p>
               </div>
@@ -308,3 +308,4 @@ export default function BookPage() {
     </Layout>
   );
 }
+

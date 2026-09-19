@@ -85,24 +85,24 @@ export default function Search() {
     <Layout>
       <div className="space-y-6">
         {/* PAGE HEADER & SEARCH BAR */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900">
             Search Local Book Inventory
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Search live inventory across all bookstores in Silapathar by title, author, or store name.
           </p>
 
-          <form onSubmit={handleSearchSubmit} className="mt-5 flex gap-2 sm:gap-3">
+          <form onSubmit={handleSearchSubmit} className="mt-4 sm:mt-5 flex flex-col sm:flex-row gap-2 sm:gap-3">
             <div className="relative flex-1">
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Enter title (e.g. Chemistry), author, or bookstore name..."
-                className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-sm"
+                placeholder="Enter title, author, or bookstore..."
+                className="w-full pl-10 pr-10 py-2.5 sm:py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-sm"
               />
-              <span className="absolute left-3.5 top-3.5 text-slate-400 text-base">🔍</span>
+              <span className="absolute left-3.5 top-3 sm:top-3.5 text-slate-400 text-sm sm:text-base">🔍</span>
               {query && (
                 <button
                   type="button"
@@ -110,7 +110,7 @@ export default function Search() {
                     setQuery('');
                     fetchInventoryResults('');
                   }}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 text-sm font-bold bg-slate-100 rounded-full w-6 h-6 flex items-center justify-center"
+                  className="absolute right-3 top-2.5 sm:top-3 text-slate-400 hover:text-slate-600 text-xs font-bold bg-slate-100 rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center"
                 >
                   ✕
                 </button>
@@ -119,7 +119,7 @@ export default function Search() {
 
             <button
               type="submit"
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-2.5 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 flex-shrink-0"
             >
               <span>Search</span>
             </button>
@@ -128,8 +128,8 @@ export default function Search() {
 
         {/* RESULTS SECTION */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-slate-900">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">
               {query ? `Search Results for "${query}"` : 'All Bookstore Inventory'}
             </h2>
             <span className="text-xs font-semibold text-slate-500">
@@ -138,18 +138,18 @@ export default function Search() {
           </div>
 
           {loading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-64 bg-slate-200 rounded-xl animate-pulse"></div>
+                <div key={i} className="h-64 bg-slate-200 rounded-2xl animate-pulse"></div>
               ))}
             </div>
           )}
 
           {!loading && results.length === 0 && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center max-w-md mx-auto">
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-10 text-center max-w-md mx-auto shadow-sm">
               <div className="text-4xl mb-3">🔍</div>
               <h3 className="text-lg font-bold text-slate-900">No Inventory Found</h3>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">
                 No store inventory matched your search criteria.
               </p>
               <button
@@ -157,7 +157,7 @@ export default function Search() {
                   setQuery('');
                   fetchInventoryResults('');
                 }}
-                className="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 font-semibold text-xs rounded-lg hover:bg-indigo-100"
+                className="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 font-semibold text-xs rounded-xl hover:bg-indigo-100 transition-colors"
               >
                 Clear Search
               </button>
@@ -165,7 +165,7 @@ export default function Search() {
           )}
 
           {!loading && results.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {results.map((inv) => (
                 <BookCard key={inv.id} inventory={inv} />
               ))}
@@ -176,3 +176,4 @@ export default function Search() {
     </Layout>
   );
 }
+

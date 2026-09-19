@@ -183,25 +183,25 @@ export default function AdminOrders() {
     <Layout>
       <div className="space-y-6">
         {/* HEADER & NAV */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
               <span>Platform Admin Management</span>
               <span>•</span>
               <Link href="/admin/dashboard" className="hover:underline">Dashboard</Link>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900">
               Manage All Platform Orders
             </h1>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
               Fulfill reservations, mark completed pick-ups, or cancel orders with stock restoration.
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Link
               href="/admin/dashboard"
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors"
+              className="w-full sm:w-auto text-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors"
             >
               📊 Stats Dashboard
             </Link>
@@ -211,15 +211,15 @@ export default function AdminOrders() {
         {loading && (
           <div className="py-12 text-center text-slate-500">
             <div className="text-3xl mb-2 animate-bounce">📦</div>
-            <p>Loading admin order records...</p>
+            <p className="text-xs sm:text-sm">Loading admin order records...</p>
           </div>
         )}
 
         {!loading && orders.length === 0 && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center max-w-md mx-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-10 text-center max-w-md mx-auto shadow-sm">
             <div className="text-4xl mb-3">📋</div>
             <h3 className="text-lg font-bold text-slate-900">No Orders Available</h3>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
               There are currently no customer reservations in the database.
             </p>
           </div>
@@ -228,23 +228,23 @@ export default function AdminOrders() {
         {!loading && orders.length > 0 && (
           <div className="space-y-4">
             {orders.map((order) => (
-              <div key={order.id} className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-slate-400">ID:</span>
-                      <span className="text-xs font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+              <div key={order.id} className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 sm:pb-4 border-b border-slate-100 gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[11px] sm:text-xs font-mono font-bold text-slate-400">ID:</span>
+                      <span className="text-[11px] sm:text-xs font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded truncate max-w-[180px] sm:max-w-none">
                         {order.id}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-[11px] sm:text-xs text-slate-500 mt-1">
                       Received: {new Date(order.created_at).toLocaleString()}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border ${getStatusBadge(
+                      className={`px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-extrabold uppercase tracking-wider border ${getStatusBadge(
                         order.status
                       )}`}
                     >
@@ -252,11 +252,11 @@ export default function AdminOrders() {
                     </span>
 
                     {order.status === 'reserved' && (
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => markCompleted(order.id)}
                           disabled={actionLoading === order.id}
-                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
                         >
                           {actionLoading === order.id ? 'Processing...' : 'Mark Picked Up'}
                         </button>
@@ -264,7 +264,7 @@ export default function AdminOrders() {
                         <button
                           onClick={() => cancelOrder(order)}
                           disabled={actionLoading === order.id}
-                          className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
+                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm"
                         >
                           Cancel Order
                         </button>
@@ -274,14 +274,14 @@ export default function AdminOrders() {
                 </div>
 
                 {/* ITEMS BREAKDOWN */}
-                <div className="mt-4 space-y-2">
+                <div className="mt-3 sm:mt-4 space-y-2">
                   {order.order_items?.map((item, idx) => (
                     <div
                       key={item.id || idx}
                       className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
                     >
-                      <div>
-                        <h4 className="font-bold text-slate-900 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
                           {item.books?.title || 'Book Title'}
                         </h4>
                         {order.bookstalls?.name && (
@@ -291,7 +291,7 @@ export default function AdminOrders() {
                         )}
                       </div>
 
-                      <div className="text-right">
+                      <div className="text-left sm:text-right border-t sm:border-t-0 pt-1.5 sm:pt-0 w-full sm:w-auto border-slate-200/80">
                         <span className="text-xs font-bold text-slate-700">
                           ₹{item.price_at_purchase} × {item.quantity}
                         </span>
@@ -301,9 +301,9 @@ export default function AdminOrders() {
                 </div>
 
                 {/* FOOTER TOTAL */}
-                <div className="mt-3 pt-2 flex items-center justify-between text-xs text-slate-500">
+                <div className="mt-3 pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 text-xs text-slate-500">
                   <span>Store Payment: Offline</span>
-                  <span className="font-extrabold text-slate-900 text-sm">
+                  <span className="font-extrabold text-slate-900 text-xs sm:text-sm">
                     Total: ₹{order.total_amount || 0}
                   </span>
                 </div>
@@ -315,3 +315,4 @@ export default function AdminOrders() {
     </Layout>
   );
 }
+

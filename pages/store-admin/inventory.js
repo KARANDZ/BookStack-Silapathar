@@ -204,24 +204,24 @@ export default function StoreAdminInventory() {
     <Layout>
       <div className="space-y-6">
         {/* HEADER */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
               <span>🏪 Store Inventory Portal</span>
               <span>•</span>
               <Link href="/store-admin/orders" className="hover:underline">Orders</Link>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900">
               Manage Book Inventory & Pricing
             </h1>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
               Update live stock levels, adjust store pricing, or list new book titles.
             </p>
           </div>
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center gap-1.5"
+            className="w-full sm:w-auto justify-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center gap-1.5"
           >
             <span>➕</span>
             <span>Add Title to Store</span>
@@ -230,7 +230,7 @@ export default function StoreAdminInventory() {
 
         {/* STALL SELECTION */}
         {stalls.length > 1 && (
-          <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
             <span className="text-xs font-bold text-slate-700 uppercase">Select Bookstore:</span>
             <select
               value={selectedStallId}
@@ -238,7 +238,7 @@ export default function StoreAdminInventory() {
                 setSelectedStallId(e.target.value);
                 loadInventoryForStall(e.target.value);
               }}
-              className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              className="w-full sm:w-auto px-3 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-600"
             >
               {stalls.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -253,13 +253,13 @@ export default function StoreAdminInventory() {
         {loading ? (
           <div className="py-12 text-center text-slate-500">
             <div className="text-3xl mb-2 animate-bounce">📦</div>
-            <p>Loading inventory data...</p>
+            <p className="text-xs sm:text-sm">Loading inventory data...</p>
           </div>
         ) : inventory.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center max-w-md mx-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-10 text-center max-w-md mx-auto shadow-sm">
             <div className="text-4xl mb-3">📖</div>
             <h3 className="text-lg font-bold text-slate-900">No Inventory Items</h3>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
               There are no book titles listed in inventory for this store.
             </p>
             <button
@@ -271,15 +271,15 @@ export default function StoreAdminInventory() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-700">
-                <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="w-full text-left text-xs sm:text-sm text-slate-700">
+                <thead className="bg-slate-50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
                   <tr>
-                    <th className="p-4">Book Title & Details</th>
-                    <th className="p-4">Category</th>
-                    <th className="p-4">Price (₹)</th>
-                    <th className="p-4">Stock</th>
-                    <th className="p-4 text-right">Actions</th>
+                    <th className="p-3.5 sm:p-4">Book Title & Details</th>
+                    <th className="p-3.5 sm:p-4 hidden sm:table-cell">Category</th>
+                    <th className="p-3.5 sm:p-4">Price (₹)</th>
+                    <th className="p-3.5 sm:p-4">Stock</th>
+                    <th className="p-3.5 sm:p-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -299,13 +299,13 @@ export default function StoreAdminInventory() {
 
         {/* ADD INVENTORY MODAL */}
         {showAddModal && (
-          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                <h3 className="text-lg font-bold text-slate-900">Add Book to Store Inventory</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Add Book to Store Inventory</h3>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="text-slate-400 hover:text-slate-600 font-bold text-lg"
+                  className="text-slate-400 hover:text-slate-600 font-bold text-lg p-1"
                 >
                   ✕
                 </button>
@@ -346,7 +346,7 @@ export default function StoreAdminInventory() {
                       required
                       value={selectedBookId}
                       onChange={(e) => setSelectedBookId(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     >
                       <option value="">-- Select Master Book --</option>
                       {masterBooks.map((b) => (
@@ -368,7 +368,7 @@ export default function StoreAdminInventory() {
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
                         placeholder="e.g. Higher Secondary Chemistry"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                       />
                     </div>
 
@@ -381,11 +381,11 @@ export default function StoreAdminInventory() {
                         value={newAuthor}
                         onChange={(e) => setNewAuthor(e.target.value)}
                         placeholder="e.g. Dr. O.P. Tandon"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
                           Category
@@ -395,7 +395,7 @@ export default function StoreAdminInventory() {
                           value={newCategory}
                           onChange={(e) => setNewCategory(e.target.value)}
                           placeholder="Science"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm"
                         />
                       </div>
                       <div>
@@ -407,7 +407,7 @@ export default function StoreAdminInventory() {
                           value={newIsbn}
                           onChange={(e) => setNewIsbn(e.target.value)}
                           placeholder="978-..."
-                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm"
                         />
                       </div>
                     </div>
@@ -426,7 +426,7 @@ export default function StoreAdminInventory() {
                       value={newPrice}
                       onChange={(e) => setNewPrice(e.target.value)}
                       placeholder="299.00"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
 
@@ -440,7 +440,7 @@ export default function StoreAdminInventory() {
                       value={newStock}
                       onChange={(e) => setNewStock(e.target.value)}
                       placeholder="10"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
                 </div>
@@ -477,37 +477,37 @@ function InventoryRow({ item, saving, onUpdate }) {
 
   return (
     <tr className="hover:bg-slate-50/80 transition-colors">
-      <td className="p-4">
-        <div className="font-bold text-slate-900">{book.title || 'Untitled'}</div>
-        <div className="text-xs text-slate-500">{book.author || 'Unknown Author'}</div>
+      <td className="p-3 sm:p-4">
+        <div className="font-bold text-slate-900 text-xs sm:text-sm leading-snug">{book.title || 'Untitled'}</div>
+        <div className="text-[11px] sm:text-xs text-slate-500">{book.author || 'Unknown Author'}</div>
       </td>
-      <td className="p-4">
-        <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+      <td className="p-3 sm:p-4 hidden sm:table-cell">
+        <span className="text-[11px] sm:text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
           {book.category || 'General'}
         </span>
       </td>
-      <td className="p-4">
+      <td className="p-3 sm:p-4">
         <input
           type="number"
           step="0.01"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          className="w-20 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-900"
+          className="w-16 sm:w-20 px-2 py-1 border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
         />
       </td>
-      <td className="p-4">
+      <td className="p-3 sm:p-4">
         <input
           type="number"
           value={stock}
           onChange={(e) => setStock(e.target.value)}
-          className="w-16 px-2 py-1 border border-slate-300 rounded text-xs font-bold text-slate-900"
+          className="w-14 sm:w-16 px-2 py-1 border border-slate-300 rounded-lg text-xs font-bold text-slate-900"
         />
       </td>
-      <td className="p-4 text-right">
+      <td className="p-3 sm:p-4 text-right">
         <button
           onClick={() => onUpdate(item, stock, price)}
           disabled={saving}
-          className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+          className="px-2.5 sm:px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] sm:text-xs font-bold rounded-lg transition-colors shadow-sm"
         >
           {saving ? 'Saving...' : 'Update'}
         </button>
@@ -515,3 +515,4 @@ function InventoryRow({ item, saving, onUpdate }) {
     </tr>
   );
 }
+
