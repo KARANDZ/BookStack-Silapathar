@@ -21,13 +21,13 @@ export default function Login() {
     try {
       const res = await signIn({ email, password });
       
-      // Check returnUrl query parameter or redirect by role
+      // Check returnUrl query parameter or redirect by database profile role
       const returnUrl = router.query.returnUrl;
       if (returnUrl) {
         router.push(returnUrl);
       } else {
-        // Fetch role from auth context or session user metadata
-        const userRole = res.user?.user_metadata?.role || role || 'USER';
+        // Fetch database role returned directly by signIn (or fallback to USER)
+        const userRole = res?.role || res?.profile?.role || 'USER';
         if (userRole === 'ADMIN') {
           router.push('/admin/dashboard');
         } else if (userRole === 'STORE_OWNER') {
